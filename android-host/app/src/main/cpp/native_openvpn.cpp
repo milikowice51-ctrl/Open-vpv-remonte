@@ -11,11 +11,25 @@
 namespace {
 using namespace openvpn::ClientAPI;
 
+// Android NDK declares AttachCurrentThread(JNIEnv**, void*), whereas
+// desktop OpenJDK declares AttachCurrentThread(void**, void*).
+// Resolve the correct overload at compile time for both toolchains.
+template <typename VM>
+jint attachCurrentThread(VM* vm, JNIEnv** env) {
+    if constexpr (requires(VM* candidate, JNIEnv** out) {
+        candidate->AttachCurrentThread(out, nullptr);
+    }) {
+        return vm->AttachCurrentThread(env, nullptr);
+    } else {
+        return vm->AttachCurrentThread(reinterpret_cast<void**>(env), nullptr);
+    }
+}
+
 class ScopedEnv {
 public:
     explicit ScopedEnv(JavaVM* vm) : vm_(vm) {
         if (vm_->GetEnv(reinterpret_cast<void**>(&env_), JNI_VERSION_1_6) == JNI_EDETACHED) {
-            if (vm_->AttachCurrentThread(&env_, nullptr) == JNI_OK) detach_ = true;
+            if (attachCurrentThread(vm_, &env_) == JNI_OK) detach_ = true;
         }
     }
     ~ScopedEnv() { if (detach_) vm_->DetachCurrentThread(); }
