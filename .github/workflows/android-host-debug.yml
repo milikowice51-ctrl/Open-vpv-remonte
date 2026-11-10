@@ -1,49 +1,79 @@
-# Integration candidate: build is NOT guaranteed until OpenVPN3/NDK compatibility is verified.
+
+# Android Remote VPN v0.5.1
 name: Android Host native OpenVPN3 prototype
+
 on:
   workflow_dispatch:
   push:
     paths:
       - 'android-host/**'
       - 'native/**'
+      - 'tests/**'
       - '.github/workflows/android-host-debug.yml'
+
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    timeout-minutes: 120
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - name: Install Android SDK / NDK / CMake
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+
+      - name: Install Android SDK 35, NDK and CMake
+        shell: bash
         run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-35" "ndk;27.2.12479018" "cmake;3.22.1"
-      - uses: gradle/actions/setup-gradle@v4
+          sdkmanager --install \
+            'platforms;android-35' \
+            'build-tools;35.0.0' \
+            'ndk;27.2.12479018' \
+            'cmake;3.22.1'
+          sdkmanager --list_installed
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Fetch OpenVPN3 and build its Android dependencies
+
+      - name: Fetch OpenVPN 3 and Android native dependencies
         shell: bash
         run: |
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
           bash native/setup-upstream.sh
           bash native/setup-deps.sh
           echo "VCPKG_ROOT=$GITHUB_WORKSPACE/native/vcpkg" >> "$GITHUB_ENV"
-      - name: Run offline Java and JNI validation
+
+      - name: Run source validation
+        shell: bash
         run: |
           bash tests/run_policy_tests.sh
           bash tests/check_native_syntax.sh
           python3 -m unittest discover -s controller -p 'test_*.py' -v
-      - name: Show upstream OpenVPN 3 commit used
+
+      - name: Show OpenVPN 3 commit
         run: cat native/OPENVPN3_COMMIT_USED.txt
-      - name: Build one Host APK (arm64-v8a)
+
+      - name: Build Android Host debug APK
         working-directory: android-host
-        run: gradle :app:assembleDebug --stacktrace
-      - uses: actions/upload-artifact@v4
+        shell: bash
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
         with:
           name: android-remote-vpn-v0.5.1-host-debug
           path: android-host/app/build/outputs/apk/debug/app-debug.apk
