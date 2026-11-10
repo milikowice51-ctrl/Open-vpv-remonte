@@ -1,0 +1,15 @@
+Android Remote VPN v0.5.1 — próba kompilacji (10 XI 2026)
+
+Host: Debian GNU/Linux 13, JDK 21, g++ / CMake / ninja dostępne.
+Wyniki próby:
+ - gradle :app:assembleDebug => bash: gradle: command not found
+ - Android SDK platform 35 => nie jest zainstalowany
+ - git ls-remote https://github.com/OpenVPN/openvpn3.git HEAD
+   => Could not resolve host: github.com
+ - JNI syntax (lokalne stubs) => PASS
+ - testy Java profili .ovpn => 10/10 PASS
+ - testy kontrolera Python => 12/12 PASS
+ - testy TV/TLS/ECDSA => 3/3 PASS
+
+Wniosek: nie utworzono APK. Powod: brak wymaganych narzędzi i połączenia do pobrania zależności. Testy lokalne NIE potwierdzają, że OpenVPN3 Core kompiluje się na Androida ani łączy się z serwerem.
+Uruchom GitHub Actions według BUILD_APK_GITHUB.md, aby uzyskać pierwszy rzeczywisty log pełnej kompilacji natywnej i APK.

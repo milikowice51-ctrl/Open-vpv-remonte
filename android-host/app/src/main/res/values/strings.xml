@@ -1,0 +1,3 @@
+<resources>
+    <string name="remote_accessibility_description">Zezwalaj na zdalną nawigację po telewizorze wyłącznie podczas świadomie uruchomionej sesji Android Remote VPN. Nie odczytuje zawartości okien.</string>
+</resources>
