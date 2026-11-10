@@ -15,7 +15,7 @@ class ScopedEnv {
 public:
     explicit ScopedEnv(JavaVM* vm) : vm_(vm) {
         if (vm_->GetEnv(reinterpret_cast<void**>(&env_), JNI_VERSION_1_6) == JNI_EDETACHED) {
-            if (vm_->AttachCurrentThread(reinterpret_cast<void**>(&env_), nullptr) == JNI_OK) detach_ = true;
+            if (vm_->AttachCurrentThread(&env_, nullptr) == JNI_OK) detach_ = true;
         }
     }
     ~ScopedEnv() { if (detach_) vm_->DetachCurrentThread(); }
